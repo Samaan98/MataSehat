@@ -25,13 +25,17 @@ xcodebuild -project MataSehat.xcodeproj -scheme MataSehat \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath /private/tmp/matasehat-native-dd \
   CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
-  -parallel-testing-enabled NO test
+  -parallel-testing-enabled NO \
+  -only-testing:MataSehatTests \
+  -skip-testing:MataSehatTests/OverlayWindowTests test
 
 xcodebuild -project MataSehat.xcodeproj -scheme MataSehat \
   -configuration Release -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath /private/tmp/matasehat-native-dd \
   CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual build
 ```
+
+Обычная проверка запускает тесты логики без управления экраном. `MataSehatUITests` и `OverlayWindowTests` взаимодействуют с рабочим столом или показывают реальные окна: их запускаем только для затронутых сценариев интерфейса и окон. После коммита, push или fast-forward объединения уже проверенного кода повторять UI-прогон не нужно. Правила для агента сохранены в [AGENTS.md](AGENTS.md).
 
 Локальная сборка использует ad-hoc подпись, не меняя ваши настройки подписи в Xcode. Собранное приложение для экспериментов: [build/MataSehat.app](build/MataSehat.app). Исходный продукт Release-сборки: `/private/tmp/matasehat-native-dd/Build/Products/Release/MataSehat.app`. Для распространения потребуются отдельные подпись Developer ID и notarization.
 
