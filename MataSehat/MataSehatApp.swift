@@ -1,17 +1,26 @@
-//
-//  MataSehatApp.swift
-//  MataSehat
-//
-//  Created by aakorolev on 05.10.2026.
-//
-
 import SwiftUI
 
 @main
 struct MataSehatApp: App {
+    @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var delegate
+    @State private var controller: ReminderController
+    init() {
+        let configuration = AppConfiguration()
+        let testing = configuration.isUITesting || configuration.isUnitTesting
+        let overlay = OverlayWindowController()
+        let controller = ReminderController(clock: SystemReminderClock(),
+            store: PreferencesStore(defaults: configuration.defaults), scheduler: ReminderScheduler(),
+            overlay: overlay, login: testing ? InactiveLoginItemService() : LoginItemService(),
+            activity: testing ? InactiveActivityMonitor() : SystemActivityMonitor(),
+            automaticReminders: !testing)
+        overlay.onError = { [weak controller] message in controller?.reportError(message) }
+        _controller = State(initialValue: controller)
+        delegate.controller = controller
+    }
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra("MataSehat", systemImage: "eye") {
+            QuickPanelView(controller: controller, showSettings: delegate.showSettings)
         }
+            .menuBarExtraStyle(.window)
     }
 }

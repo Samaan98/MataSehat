@@ -1,0 +1,44 @@
+# MataSehat
+
+Нативная утилита строки меню для macOS 26.5 и новее: мягкие напоминания о моргании во время работы.
+
+- Глаз в правом верхнем углу, глаз по центру или лёгкое затемнение.
+- Интервал 10, 15, 20 или 30 секунд; длительность эффекта 0,5–2 секунды.
+- Отдельная настройка заметности и длительности каждого эффекта.
+- Паузы 5, 15, 30, 60 минут или до ручного включения.
+- Предпросмотр работает на паузе и сохраняет её.
+- Настройки и пауза сохраняются между запусками.
+- Системное оформление SwiftUI, светлая/тёмная тема и Liquid Glass для основного действия.
+
+Откройте `MataSehat.xcodeproj` в Xcode 26.5 и выберите общую схему **MataSehat**. При первом запуске открываются настройки. После закрытия окна управление остаётся под значком глаза в строке меню. Команда «Выход» завершает приложение.
+
+## Разработка
+
+Внешние зависимости и база данных не нужны. SwiftUI отвечает за управление и настройки, AppKit — за прозрачное окно эффекта, ServiceManagement — за запуск при входе. Настройки хранятся в UserDefaults. Логика времени отделена от системных интеграций; unit-тесты используют Swift Testing, UI-тесты — XCTest.
+
+```sh
+xcodebuild -project MataSehat.xcodeproj -scheme MataSehat \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /private/tmp/matasehat-native-dd \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
+  -parallel-testing-enabled NO test
+
+xcodebuild -project MataSehat.xcodeproj -scheme MataSehat \
+  -configuration Release -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /private/tmp/matasehat-native-dd \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual build
+```
+
+Локальная сборка использует ad-hoc подпись, не меняя ваши настройки подписи в Xcode. Собранное приложение для экспериментов: [build/MataSehat.app](build/MataSehat.app). Исходный продукт Release-сборки: `/private/tmp/matasehat-native-dd/Build/Products/Release/MataSehat.app`. Для распространения потребуются отдельные подпись Developer ID и notarization.
+
+Запуск при входе может быть недоступен для временной локальной копии; приложение показывает фактический статус macOS и необходимость системного разрешения. Его регистрация происходит только через пользовательский переключатель.
+
+Результаты проверки и ограничения: [manual-verification.md](docs/manual-verification.md).
+
+## Платформенные ориентиры
+
+- [Apple Human Interface Guidelines: macOS](https://developer.apple.com/design/human-interface-guidelines/designing-for-macos/)
+- [Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)
+- [NSHostingSceneRepresentation](https://developer.apple.com/documentation/swiftui/nshostingscenerepresentation): регистрация нативной сцены настроек и доступ к публичному openSettings из жизненного цикла приложения.
+
+Камера, статистика, определение звонков и запись экрана в эту версию не входят.
