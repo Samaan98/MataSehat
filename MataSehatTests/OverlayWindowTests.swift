@@ -4,6 +4,24 @@ import Testing
 
 @MainActor
 struct OverlayWindowTests {
+    @Test func screenBreakCardAcceptsActionsWithoutAutomaticallyTakingFocus() {
+        let presenter = ScreenBreakWindowController()
+        #expect(!presenter.panel.ignoresMouseEvents)
+        #expect(presenter.panel.canBecomeKey)
+        #expect(!presenter.panel.canBecomeMain)
+        #expect(presenter.panel.styleMask.contains(.nonactivatingPanel))
+        #expect(presenter.panel.collectionBehavior.contains(.canJoinAllSpaces))
+        let keyWindow = NSApp.keyWindow
+        presenter.show(.invitation) { _ in }
+        #expect(presenter.panel.isVisible)
+        #expect(NSApp.keyWindow === keyWindow)
+        let panel = presenter.panel
+        presenter.show(.resting(until: ProcessInfo.processInfo.systemUptime + 20)) { _ in }
+        #expect(presenter.panel === panel)
+        presenter.hide()
+        #expect(!presenter.panel.isVisible)
+        #expect(presenter.panel.contentView == nil)
+    }
     @Test func effectWindowAllowsInputToPassWithoutBecomingKey() {
         let overlay = OverlayWindowController()
         #expect(overlay.panel.ignoresMouseEvents)

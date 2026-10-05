@@ -22,7 +22,8 @@ nonisolated struct ReminderSettings: Equatable, Sendable {
     var interval: TimeInterval
     var effects: [ReminderEffect: EffectSettings]
     var pauseOption: PauseOption
-    static let intervals: [TimeInterval] = [10, 15, 20, 30]
+    var screenBreaksEnabled = true
+    static let intervals: [TimeInterval] = [5, 10, 15, 20, 30]
     static var defaults: Self {
         Self(effect: .cornerEye, interval: 10, effects: Dictionary(uniqueKeysWithValues: ReminderEffect.allCases.map { ($0, $0.defaults) }), pauseOption: .minutes(15))
     }

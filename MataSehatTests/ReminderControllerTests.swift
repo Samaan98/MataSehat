@@ -51,11 +51,52 @@ nonisolated final class TestClock: ReminderClock {
     let overlay = TestOverlay()
     let login = TestLogin()
     let activity = TestActivity()
+    let breaks = TestBreakPresenter()
     func make() -> ReminderController {
-        ReminderController(clock: clock, store: store, scheduler: scheduler, overlay: overlay, login: login, activity: activity)
+        ReminderController(clock: clock, store: store, scheduler: scheduler, overlay: overlay, login: login, activity: activity, breakPresenter: breaks)
     }
 }
+@MainActor final class TestBreakPresenter: ScreenBreakPresenting {
+    var values: [ScreenBreakPhase] = []
+    var hides = 0
+    var action: (@MainActor (ReminderEvent) -> Void)?
+    func show(_ phase: ScreenBreakPhase, onAction: @escaping @MainActor (ReminderEvent) -> Void) { values.append(phase); action = onAction }
+    func hide() { hides += 1; action = nil }
+}
 @MainActor struct ReminderControllerTests {
+    @Test func breakCardActionsUseSchedulerAndStopReleasesPresentation() {
+        let f = ControllerFixture(); let controller = f.make(); controller.start()
+        f.clock.advance(1_200); f.scheduler.fire()
+        #expect(controller.state.breakPhase == .invitation)
+        #expect(f.breaks.values == [.invitation])
+        f.breaks.action?(.startBreak)
+        #expect(controller.state.breakPhase == .resting(until: 1_220))
+        #expect(f.scheduler.delay == 20)
+        let effectsBeforeRest = f.overlay.values.count
+        f.clock.advance(19)
+        controller.send(.tick)
+        #expect(f.overlay.values.count == effectsBeforeRest)
+        f.clock.advance(1); f.scheduler.fire()
+        #expect(controller.state.breakPhase == .waiting)
+        #expect(f.breaks.action == nil)
+        #expect(f.scheduler.delay == 10)
+        controller.send(.startBreak)
+        controller.stop()
+        #expect(f.breaks.action == nil)
+        #expect(f.scheduler.action == nil)
+    }
+    @Test func explicitRestFinishesEvenWhenAutomaticRemindersAreDisabled() {
+        let f = ControllerFixture()
+        let controller = ReminderController(clock: f.clock, store: f.store, scheduler: f.scheduler,
+            overlay: f.overlay, login: f.login, activity: f.activity,
+            automaticReminders: false, breakPresenter: f.breaks)
+        controller.start(); controller.send(.pause(.manual)); controller.send(.startBreak)
+        #expect(f.scheduler.delay == 20)
+        f.clock.advance(20); f.scheduler.fire()
+        #expect(controller.state.breakPhase == .waiting)
+        #expect(controller.state.pause == .manual)
+        #expect(f.scheduler.action == nil)
+    }
     @Test func startIsIdempotentAndStopCancelsEverything() {
         let f = ControllerFixture(); let controller = f.make()
         controller.start(); controller.start()

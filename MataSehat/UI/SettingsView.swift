@@ -37,9 +37,25 @@ struct SettingsView: View {
                         controller.send(.preview)
                     }
                     .accessibilityIdentifier("preview")
+                    .disabled(controller.state.breakPhase.isResting)
                 }
             } header: { Text("Напоминание") } footer: {
                 Text("Наложение пропускает нажатия и не прерывает работу.")
+            }
+            Section {
+                Toggle("Напоминать каждые 20 минут", isOn: Binding(
+                    get: { controller.state.settings.screenBreaksEnabled },
+                    set: { enabled in controller.updateSettings { $0.screenBreaksEnabled = enabled } }))
+                    .accessibilityIdentifier("screenBreaksEnabled")
+                HStack {
+                    Text("20 секунд · взгляд вдаль").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Показать напоминание") { controller.send(.requestBreak) }
+                        .disabled(controller.state.breakPhase.isResting)
+                        .accessibilityIdentifier("breakPreview")
+                }
+            } header: { Text("Отдых 20–20–20") } footer: {
+                Text("Отдых начинается по кнопке в карточке. Можно отложить на 5 минут.")
             }
             Section("Пауза") {
                 StatusView(pause: controller.state.pause)

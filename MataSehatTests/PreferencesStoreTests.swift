@@ -4,6 +4,22 @@ import Testing
 
 @MainActor
 struct PreferencesStoreTests {
+    @Test func screenBreakPreferenceRoundTripsAndOlderDefaultsRemainValid() throws {
+        try withStore { store, defaults in
+            defaults.set(1, forKey: "matasehat.schemaVersion")
+            defaults.set(30, forKey: "matasehat.interval")
+            #expect(store.load()?.settings.screenBreaksEnabled == true)
+            var settings = ReminderSettings.defaults
+            settings.screenBreaksEnabled = false
+            settings.interval = 5
+            store.save(StoredPreferences(settings: settings, pause: .manual))
+            #expect(store.load()?.settings.screenBreaksEnabled == false)
+            #expect(store.load()?.settings.interval == 5)
+            #expect(store.load()?.pause == .manual)
+            defaults.set("invalid", forKey: "matasehat.screenBreaksEnabled")
+            #expect(store.load()?.settings.screenBreaksEnabled == true)
+        }
+    }
     private func withStore(_ body: (PreferencesStore, UserDefaults) throws -> Void) throws {
         let name = "MataSehat.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: name))

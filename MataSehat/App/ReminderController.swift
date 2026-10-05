@@ -12,12 +12,14 @@ import Observation
     @ObservationIgnored private let overlay: any OverlayPresenting
     @ObservationIgnored private let login: any LoginItemServicing
     @ObservationIgnored private let activity: any ActivityMonitoring
+    @ObservationIgnored private let breakPresenter: any ScreenBreakPresenting
     @ObservationIgnored private let automaticReminders: Bool
     @ObservationIgnored private var started = false
-    init(clock: any ReminderClock, store: any PreferencesStoring, scheduler: any ReminderScheduling, overlay: any OverlayPresenting, login: any LoginItemServicing, activity: any ActivityMonitoring, automaticReminders: Bool = true) {
+    init(clock: any ReminderClock, store: any PreferencesStoring, scheduler: any ReminderScheduling, overlay: any OverlayPresenting, login: any LoginItemServicing, activity: any ActivityMonitoring, automaticReminders: Bool = true, breakPresenter: (any ScreenBreakPresenting)? = nil) {
         self.clock = clock; self.store = store; self.scheduler = scheduler
         self.overlay = overlay; self.login = login; self.activity = activity
         self.automaticReminders = automaticReminders
+        self.breakPresenter = breakPresenter ?? InactiveScreenBreakPresenter()
         let saved = store.load()
         isFirstLaunch = saved == nil
         state = ReminderEngine.initial(settings: saved?.settings ?? .defaults, pause: saved?.pause ?? .active, at: clock.now())
@@ -48,6 +50,9 @@ import Observation
         }
         for command in result.commands {
             switch command {
+            case .showBreak:
+                breakPresenter.show(state.breakPhase) { [weak self] event in self?.send(event) }
+            case .hideBreak: breakPresenter.hide()
             case .hide: overlay.hide()
             case .show(let value):
                 overlay.show(value, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion) { [weak self] id in
@@ -64,15 +69,22 @@ import Observation
     }
     private func scheduleNext() {
         scheduler.cancel()
-        guard started, automaticReminders, !state.suspended else { return }
+        guard started, !state.suspended else { return }
         let now = clock.now()
-        var delay: TimeInterval?
-        if let nextDue = state.nextDue { delay = max(0, nextDue - now.monotonic) }
-        if case .until(let deadline) = state.pause {
-            // A bounded wake-up also notices clock changes even if their notification is missed.
-            delay = min(60, max(0, deadline.timeIntervalSince(now.wall)))
+        var delays: [TimeInterval] = []
+        if case .resting(let deadline) = state.breakPhase {
+            delays.append(max(0, deadline - now.monotonic))
         }
-        if let delay {
+        if automaticReminders {
+            for due in [state.nextDue, state.nextBreakDue].compactMap({ $0 }) {
+                delays.append(max(0, due - now.monotonic))
+            }
+        }
+        if automaticReminders, case .until(let deadline) = state.pause {
+            // A bounded wake-up also notices clock changes even if their notification is missed.
+            delays.append(min(60, max(0, deadline.timeIntervalSince(now.wall))))
+        }
+        if let delay = delays.min() {
             scheduler.schedule(after: delay) { [weak self] in self?.send(.tick) }
         }
     }
@@ -86,6 +98,6 @@ import Observation
     func stop() {
         guard started else { return }
         started = false
-        scheduler.cancel(); overlay.hide(); activity.stop()
+        scheduler.cancel(); overlay.hide(); breakPresenter.hide(); activity.stop()
     }
 }

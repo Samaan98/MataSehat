@@ -6,6 +6,9 @@ import SwiftUI
     private var settingsScene: NSHostingSceneRepresentation<Settings<AnyView>>?
     func applicationWillFinishLaunching(_ notification: Notification) {
         guard !AppConfiguration().isUnitTesting, let controller else { return }
+        if let appearance = testAppearance {
+            NSApp.appearance = NSAppearance(named: appearance == .dark ? .darkAqua : .aqua)
+        }
         let scene = NSHostingSceneRepresentation {
             Settings {
                 AnyView(SettingsView(controller: controller).preferredColorScheme(testAppearance))

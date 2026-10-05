@@ -11,6 +11,10 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
         var settings = ReminderSettings.defaults
         if let raw = string("effect"), let effect = ReminderEffect(rawValue: raw) { settings.effect = effect }
         if let interval = number("interval") { settings.interval = interval }
+        if let value = defaults.object(forKey: key("screenBreaksEnabled")) as? NSNumber,
+           CFGetTypeID(value) == CFBooleanGetTypeID() {
+            settings.screenBreaksEnabled = value.boolValue
+        }
         if let raw = string("pauseOption") {
             settings.pauseOption = raw == "manual" ? .manual : .minutes(Int(raw) ?? 15)
         }
@@ -36,6 +40,7 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
         let settings = value.settings.validated()
         set(settings.effect.rawValue, "effect")
         set(settings.interval, "interval")
+        set(settings.screenBreaksEnabled, "screenBreaksEnabled")
         switch settings.pauseOption {
         case .manual: set("manual", "pauseOption")
         case .minutes(let value): set(String(value), "pauseOption")

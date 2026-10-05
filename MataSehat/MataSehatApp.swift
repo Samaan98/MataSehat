@@ -8,12 +8,14 @@ struct MataSehatApp: App {
         let configuration = AppConfiguration()
         let testing = configuration.isUITesting || configuration.isUnitTesting
         let overlay = OverlayWindowController()
+        let breaks = ScreenBreakWindowController()
         let controller = ReminderController(clock: SystemReminderClock(),
             store: PreferencesStore(defaults: configuration.defaults), scheduler: ReminderScheduler(),
             overlay: overlay, login: testing ? InactiveLoginItemService() : LoginItemService(),
             activity: testing ? InactiveActivityMonitor() : SystemActivityMonitor(),
-            automaticReminders: !testing)
+            automaticReminders: !testing, breakPresenter: breaks)
         overlay.onError = { [weak controller] message in controller?.reportError(message) }
+        breaks.onError = { [weak controller] message in controller?.reportError(message) }
         _controller = State(initialValue: controller)
         delegate.controller = controller
     }
