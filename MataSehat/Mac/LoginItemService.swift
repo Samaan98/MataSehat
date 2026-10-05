@@ -7,11 +7,14 @@ nonisolated enum LoginItemStatus: Equatable { case enabled, disabled, requiresAp
 }
 @MainActor final class LoginItemService: LoginItemServicing {
     func status() -> LoginItemStatus {
-        switch SMAppService.mainApp.status {
+        Self.status(for: SMAppService.mainApp.status)
+    }
+    static func status(for systemStatus: SMAppService.Status) -> LoginItemStatus {
+        switch systemStatus {
         case .enabled: .enabled
-        case .notRegistered: .disabled
+        // A missing service may simply need registration. Let register() report any failure.
+        case .notRegistered, .notFound: .disabled
         case .requiresApproval: .requiresApproval
-        case .notFound: .unavailable
         @unknown default: .unavailable
         }
     }
