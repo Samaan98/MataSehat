@@ -7,8 +7,6 @@ nonisolated enum ScreenBreakPhase: Equatable, Sendable {
     var isResting: Bool { if case .resting = self { true } else { false } }
 }
 nonisolated enum ScreenBreakTiming {
-    static let interval: TimeInterval = 1_200
-    static let duration: TimeInterval = 20
     static let snooze: TimeInterval = 300
 }
 nonisolated struct EffectPresentation: Equatable, Sendable {
@@ -16,6 +14,8 @@ nonisolated struct EffectPresentation: Equatable, Sendable {
     let effect: ReminderEffect
     let settings: EffectSettings
     let origin: PresentationOrigin
+    var eyePosition: EyePosition = .center
+    var eyeScale = 1.0
 }
 nonisolated struct ReminderState: Equatable, Sendable {
     var settings: ReminderSettings
@@ -26,16 +26,21 @@ nonisolated struct ReminderState: Equatable, Sendable {
     var presentation: EffectPresentation?
     var breakPhase: ScreenBreakPhase = .waiting
     var nextBreakDue: TimeInterval?
+    var breakDuration: TimeInterval = 20
 }
 nonisolated enum ReminderEvent: Sendable {
     case tick, pause(PauseOption), resume, settingsChanged(ReminderSettings), preview, suspend, wake, effectFinished(UInt64)
     case requestBreak, startBreak, snoozeBreak, finishBreak
 }
-nonisolated enum EffectCommand: Equatable, Sendable { case show(EffectPresentation), hide, showBreak, hideBreak }
+nonisolated enum ReminderSound: Equatable, Sendable { case breakInvitation, breakCompleted }
+nonisolated enum EffectCommand: Equatable, Sendable {
+    case show(EffectPresentation), hide, showBreak, hideBreak, playSound(ReminderSound)
+}
 nonisolated struct EngineResult: Sendable { let state: ReminderState; let commands: [EffectCommand] }
 nonisolated enum ReminderEngine {
     static func initial(settings: ReminderSettings, pause: PauseState, at time: ClockSnapshot) -> ReminderState {
         var state = ReminderState(settings: settings.validated(), pause: pause)
+        state.breakDuration = state.settings.screenBreakDuration
         expirePause(&state, at: time)
         resetInterval(&state, at: time)
         resetBreakCycle(&state, at: time)
@@ -51,7 +56,8 @@ nonisolated enum ReminderEngine {
         func show(_ origin: PresentationOrigin) {
             state.generation &+= 1
             let value = EffectPresentation(id: state.generation, effect: state.settings.effect,
-                settings: state.settings.effects[state.settings.effect] ?? state.settings.effect.defaults, origin: origin)
+                settings: state.settings.effects[state.settings.effect] ?? state.settings.effect.defaults, origin: origin,
+                eyePosition: state.settings.eyePosition, eyeScale: state.settings.eyeScale)
             state.presentation = value
             commands.append(.show(value))
         }
@@ -59,7 +65,8 @@ nonisolated enum ReminderEngine {
             if state.breakPhase != .waiting { commands.append(.hideBreak) }
             state.breakPhase = .waiting
         }
-        func finishBreak() {
+        func finishBreak(completed: Bool = false) {
+            if completed, state.settings.screenBreakSoundsEnabled { commands.append(.playSound(.breakCompleted)) }
             hideBreak()
             resetInterval(&state, at: time)
             resetBreakCycle(&state, at: time)
@@ -67,15 +74,19 @@ nonisolated enum ReminderEngine {
         switch event {
         case .requestBreak:
             guard !state.suspended, !state.breakPhase.isResting else { break }
+            let newlyShown = state.breakPhase != .invitation
             hide()
             state.breakPhase = .invitation
+            state.breakDuration = state.settings.screenBreakDuration
             state.nextBreakDue = nil
             resetInterval(&state, at: time)
             commands.append(.showBreak)
+            if newlyShown, state.settings.screenBreakSoundsEnabled { commands.append(.playSound(.breakInvitation)) }
         case .startBreak:
             guard !state.suspended, !state.breakPhase.isResting else { break }
             hide()
-            state.breakPhase = .resting(until: time.monotonic + ScreenBreakTiming.duration)
+            state.breakDuration = state.settings.screenBreakDuration
+            state.breakPhase = .resting(until: time.monotonic + state.breakDuration)
             state.nextDue = nil
             state.nextBreakDue = nil
             commands.append(.showBreak)
@@ -94,15 +105,17 @@ nonisolated enum ReminderEngine {
                 if state.breakPhase == .waiting { resetBreakCycle(&state, at: time) }
             }
             if case .resting(let deadline) = state.breakPhase {
-                if time.monotonic >= deadline { finishBreak() }
+                if time.monotonic >= deadline { finishBreak(completed: true) }
                 break
             }
             if state.pause == .active, let due = state.nextBreakDue, time.monotonic >= due {
                 hide()
                 state.breakPhase = .invitation
+                state.breakDuration = state.settings.screenBreakDuration
                 state.nextBreakDue = nil
                 resetInterval(&state, at: time)
                 commands.append(.showBreak)
+                if state.settings.screenBreakSoundsEnabled { commands.append(.playSound(.breakInvitation)) }
             } else if state.pause == .active, let due = state.nextDue, time.monotonic >= due {
                 state.nextDue = time.monotonic + state.settings.interval
                 if state.presentation == nil { show(.scheduled) }
@@ -126,14 +139,21 @@ nonisolated enum ReminderEngine {
             resetBreakCycle(&state, at: time)
         case .settingsChanged(let settings):
             hide()
+            let settings = settings.validated()
             let breakEnabledChanged = state.settings.screenBreaksEnabled != settings.screenBreaksEnabled
-            state.settings = settings.validated()
+            let breakPeriodChanged = state.settings.screenBreakInterval != settings.screenBreakInterval
+            let breakDurationChanged = state.settings.screenBreakDuration != settings.screenBreakDuration
+            state.settings = settings
             let pauseExpired = expirePause(&state, at: time)
-            if breakEnabledChanged, !state.breakPhase.isResting {
+            if (breakEnabledChanged || (breakPeriodChanged && state.breakPhase == .waiting)), !state.breakPhase.isResting {
                 hideBreak()
                 resetBreakCycle(&state, at: time)
             } else if pauseExpired, state.breakPhase == .waiting {
                 resetBreakCycle(&state, at: time)
+            }
+            if breakDurationChanged, state.breakPhase == .invitation {
+                state.breakDuration = settings.screenBreakDuration
+                commands.append(.showBreak)
             }
             resetInterval(&state, at: time)
         case .preview:
@@ -170,8 +190,8 @@ nonisolated enum ReminderEngine {
     private static func resetInterval(_ state: inout ReminderState, at time: ClockSnapshot) {
         state.nextDue = state.pause == .active && !state.suspended && !state.breakPhase.isResting ? time.monotonic + state.settings.interval : nil
     }
-    private static func resetBreakCycle(_ state: inout ReminderState, at time: ClockSnapshot, delay: TimeInterval = ScreenBreakTiming.interval) {
+    private static func resetBreakCycle(_ state: inout ReminderState, at time: ClockSnapshot, delay: TimeInterval? = nil) {
         state.nextBreakDue = state.settings.screenBreaksEnabled && state.pause == .active && !state.suspended
-            ? time.monotonic + delay : nil
+            ? time.monotonic + (delay ?? state.settings.screenBreakInterval) : nil
     }
 }

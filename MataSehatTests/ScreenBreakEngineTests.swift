@@ -7,7 +7,9 @@ import Testing
         ClockSnapshot(wall: Date(timeIntervalSince1970: 1_000 + seconds), monotonic: seconds)
     }
     private func initial(pause: PauseState = .active) -> ReminderState {
-        ReminderEngine.initial(settings: .defaults, pause: pause, at: time(0))
+        var settings = ReminderSettings.defaults
+        settings.interval = 10
+        return ReminderEngine.initial(settings: settings, pause: pause, at: time(0))
     }
     @Test func fiveSecondBlinkIntervalIsUsedByScheduler() {
         var settings = ReminderSettings.defaults
@@ -95,7 +97,7 @@ import Testing
         #expect(!change.commands.contains(.hideBreak))
         state = ReminderEngine.reduce(change.state, event: .tick, at: time(120)).state
         #expect(state.breakPhase == .waiting)
-        #expect(state.nextDue == 130)
+        #expect(state.nextDue == 125)
         #expect(state.nextBreakDue == (enabled ? 1_320 : nil))
     }
     @Test func pauseAndSleepHideCardAndWakeStartsFreshCycle() {

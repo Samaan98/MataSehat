@@ -14,12 +14,14 @@ struct BlinkEyeShape: Shape {
 }
 struct BlinkEyeMark: View {
     var openness: Double = 1
+    var width: CGFloat = 64
     var body: some View {
+        let scale = width / 64
         ZStack {
-            BlinkEyeShape(openness: openness).stroke(style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-            Circle().frame(width: 14, height: 14).scaleEffect(x: 1, y: max(0, openness))
+            BlinkEyeShape(openness: openness).stroke(style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round, lineJoin: .round))
+            Circle().frame(width: 14 * scale, height: 14 * scale).scaleEffect(x: 1, y: max(0, openness))
         }
-        .frame(width: 64, height: 38)
+        .frame(width: width, height: 38 * scale)
         .accessibilityHidden(true)
     }
 }

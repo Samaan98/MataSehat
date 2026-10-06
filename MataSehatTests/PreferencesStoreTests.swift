@@ -4,9 +4,9 @@ import Testing
 
 @MainActor
 struct PreferencesStoreTests {
-    @Test func screenBreakPreferenceRoundTripsAndOlderDefaultsRemainValid() throws {
+    @Test func screenBreakPreferenceRoundTripsAndMissingOrCorruptFlagUsesDefault() throws {
         try withStore { store, defaults in
-            defaults.set(1, forKey: "matasehat.schemaVersion")
+            defaults.set(2, forKey: "matasehat.schemaVersion")
             defaults.set(30, forKey: "matasehat.interval")
             #expect(store.load()?.settings.screenBreaksEnabled == true)
             var settings = ReminderSettings.defaults
@@ -29,15 +29,23 @@ struct PreferencesStoreTests {
     @Test func emptyStoreMeansFirstLaunch() throws {
         try withStore { store, _ in #expect(store.load() == nil) }
     }
+    @Test(arguments: [1, 3]) func unsupportedSchemaUsesFreshSettings(version: Int) throws {
+        try withStore { store, defaults in
+            defaults.set(version, forKey: "matasehat.schemaVersion")
+            defaults.set(30, forKey: "matasehat.interval")
+            #expect(store.load() == nil)
+            store.save(StoredPreferences(settings: .defaults, pause: .active))
+            #expect(store.load() == StoredPreferences(settings: .defaults, pause: .active))
+        }
+    }
     @Test(arguments: [PauseState.active, .manual, .until(Date(timeIntervalSince1970: 12_345))])
     func roundTripKeepsAllEffectSettingsAndPause(pause: PauseState) throws {
         try withStore { store, _ in
             var settings = ReminderSettings.defaults
-            settings.effect = .centerEye
+            settings.effect = .eye
             settings.interval = 20
             settings.pauseOption = .manual
-            settings.effects[.cornerEye] = EffectSettings(opacity: 0.5, duration: 0.6)
-            settings.effects[.centerEye] = EffectSettings(opacity: 0.9, duration: 1.5)
+            settings.effects[.eye] = EffectSettings(opacity: 0.9, duration: 1.5)
             settings.effects[.dim] = EffectSettings(opacity: 0.12, duration: 2)
             let value = StoredPreferences(settings: settings, pause: pause)
             store.save(value)
@@ -46,23 +54,23 @@ struct PreferencesStoreTests {
     }
     @Test func corruptFieldsDoNotDestroyValidValues() throws {
         try withStore { store, defaults in
-            defaults.set(1, forKey: "matasehat.schemaVersion")
+            defaults.set(2, forKey: "matasehat.schemaVersion")
             defaults.set("unknown", forKey: "matasehat.effect")
             defaults.set(30, forKey: "matasehat.interval")
             defaults.set("manual", forKey: "matasehat.pauseOption")
             defaults.set("until", forKey: "matasehat.pauseState")
             defaults.set("bad date", forKey: "matasehat.pauseDeadline")
             defaults.set(0.1, forKey: "matasehat.effects.dim.opacity")
-            defaults.set(true, forKey: "matasehat.effects.cornerEye.opacity")
-            defaults.set(-2, forKey: "matasehat.effects.centerEye.duration")
+            defaults.set(true, forKey: "matasehat.effects.eye.opacity")
+            defaults.set(-2, forKey: "matasehat.effects.eye.duration")
             let value = try #require(store.load())
-            #expect(value.settings.effect == .cornerEye)
+            #expect(value.settings.effect == .eye)
             #expect(value.settings.interval == 30)
             #expect(value.settings.pauseOption == .manual)
             #expect(value.pause == .active)
             #expect(value.settings.effects[.dim]?.opacity == 0.1)
-            #expect(value.settings.effects[.cornerEye]?.opacity == 0.8)
-            #expect(value.settings.effects[.centerEye]?.duration == 1)
+            #expect(value.settings.effects[.eye]?.opacity == 1)
+            #expect(value.settings.effects[.eye]?.duration == 1)
         }
     }
     @Test func leavingTimedPauseRemovesDeadline() throws {
@@ -75,7 +83,7 @@ struct PreferencesStoreTests {
     }
     @Test func enormousFiniteDeadlineIsRepairedWithoutLosingSettings() throws {
         try withStore { store, defaults in
-            defaults.set(1, forKey: "matasehat.schemaVersion")
+            defaults.set(2, forKey: "matasehat.schemaVersion")
             defaults.set("until", forKey: "matasehat.pauseState")
             defaults.set(1e300, forKey: "matasehat.pauseDeadline")
             defaults.set(20, forKey: "matasehat.interval")

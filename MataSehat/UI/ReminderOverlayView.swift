@@ -7,18 +7,20 @@ struct ReminderOverlayView: View {
     @State private var opacity = 0.0
     @State private var openness = 1.0
     var body: some View {
-        ZStack(alignment: presentation.effect == .cornerEye ? .topTrailing : .center) {
-            Color.clear
-            if presentation.effect == .dim {
-                Color.black.opacity(presentation.settings.opacity * opacity)
-            } else {
-                BlinkEyeMark(openness: openness)
-                    .scaleEffect(presentation.effect == .centerEye ? 1.8 : 1)
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.65), radius: 3)
-                    .opacity(presentation.settings.opacity * opacity)
-                    .padding(.top, presentation.effect == .cornerEye ? topInset + 24 : 0)
-                    .padding(.trailing, presentation.effect == .cornerEye ? 28 : 0)
+        GeometryReader { geometry in
+            ZStack {
+                Color.clear
+                if presentation.effect == .dim {
+                    Color.black.opacity(presentation.settings.opacity * opacity)
+                } else {
+                    let frame = EyeLayout.frame(in: geometry.size, position: presentation.eyePosition,
+                                                scale: presentation.eyeScale, topInset: topInset)
+                    BlinkEyeMark(openness: openness, width: frame.width)
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.65), radius: 3)
+                        .opacity(presentation.settings.opacity * opacity)
+                        .position(x: frame.midX, y: frame.midY)
+                }
             }
         }
         .ignoresSafeArea()

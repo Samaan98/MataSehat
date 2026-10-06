@@ -7,14 +7,16 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
     private let defaults: UserDefaults
     init(defaults: UserDefaults) { self.defaults = defaults }
     func load() -> StoredPreferences? {
-        guard number("schemaVersion") == 1 else { return nil }
+        guard number("schemaVersion") == 2 else { return nil }
         var settings = ReminderSettings.defaults
         if let raw = string("effect"), let effect = ReminderEffect(rawValue: raw) { settings.effect = effect }
+        if let raw = string("eyePosition"), let position = EyePosition(rawValue: raw) { settings.eyePosition = position }
+        if let value = number("eyeScale") { settings.eyeScale = value }
         if let interval = number("interval") { settings.interval = interval }
-        if let value = defaults.object(forKey: key("screenBreaksEnabled")) as? NSNumber,
-           CFGetTypeID(value) == CFBooleanGetTypeID() {
-            settings.screenBreaksEnabled = value.boolValue
-        }
+        settings.screenBreaksEnabled = boolean("screenBreaksEnabled") ?? true
+        settings.screenBreakSoundsEnabled = boolean("screenBreakSoundsEnabled") ?? true
+        if let value = number("screenBreakInterval") { settings.screenBreakInterval = value }
+        if let value = number("screenBreakDuration") { settings.screenBreakDuration = value }
         if let raw = string("pauseOption") {
             settings.pauseOption = raw == "manual" ? .manual : .minutes(Int(raw) ?? 15)
         }
@@ -41,6 +43,11 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
         set(settings.effect.rawValue, "effect")
         set(settings.interval, "interval")
         set(settings.screenBreaksEnabled, "screenBreaksEnabled")
+        set(settings.eyePosition.rawValue, "eyePosition")
+        set(settings.eyeScale, "eyeScale")
+        set(settings.screenBreakInterval, "screenBreakInterval")
+        set(settings.screenBreakDuration, "screenBreakDuration")
+        set(settings.screenBreakSoundsEnabled, "screenBreakSoundsEnabled")
         switch settings.pauseOption {
         case .manual: set("manual", "pauseOption")
         case .minutes(let value): set(String(value), "pauseOption")
@@ -55,11 +62,16 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
         case .manual: set("manual", "pauseState"); defaults.removeObject(forKey: key("pauseDeadline"))
         case .until(let deadline): set("until", "pauseState"); set(deadline.timeIntervalSince1970, "pauseDeadline")
         }
-        set(1, "schemaVersion")
+        set(2, "schemaVersion")
     }
     private func key(_ field: String) -> String { "matasehat." + field }
     private func set(_ value: Any, _ field: String) { defaults.set(value, forKey: key(field)) }
     private func string(_ field: String) -> String? { defaults.object(forKey: key(field)) as? String }
+    private func boolean(_ field: String) -> Bool? {
+        guard let value = defaults.object(forKey: key(field)) as? NSNumber,
+              CFGetTypeID(value) == CFBooleanGetTypeID() else { return nil }
+        return value.boolValue
+    }
     private func number(_ field: String) -> Double? {
         guard let number = defaults.object(forKey: key(field)) as? NSNumber,
               CFGetTypeID(number) != CFBooleanGetTypeID(), number.doubleValue.isFinite else { return nil }

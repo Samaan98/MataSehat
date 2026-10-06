@@ -13,7 +13,8 @@ struct MataSehatApp: App {
             store: PreferencesStore(defaults: configuration.defaults), scheduler: ReminderScheduler(),
             overlay: overlay, login: testing ? InactiveLoginItemService() : LoginItemService(),
             activity: testing ? InactiveActivityMonitor() : SystemActivityMonitor(),
-            automaticReminders: !testing, breakPresenter: breaks)
+            automaticReminders: !testing, breakPresenter: breaks,
+            soundPlayer: testing ? InactiveReminderSoundPlayer() : ReminderSoundPlayer())
         overlay.onError = { [weak controller] message in controller?.reportError(message) }
         breaks.onError = { [weak controller] message in controller?.reportError(message) }
         _controller = State(initialValue: controller)

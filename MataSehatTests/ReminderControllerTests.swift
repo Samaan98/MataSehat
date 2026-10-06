@@ -9,7 +9,12 @@ nonisolated final class TestClock: ReminderClock {
     func advance(_ seconds: Double) { wall.addTimeInterval(seconds); mono += seconds }
 }
 @MainActor final class TestStore: PreferencesStoring {
-    var value: StoredPreferences?
+    // Cadence scenarios explicitly use 10 seconds, independently of installation defaults.
+    var value: StoredPreferences? = {
+        var settings = ReminderSettings.defaults
+        settings.interval = 10
+        return StoredPreferences(settings: settings, pause: .active)
+    }()
     var saves = 0
     func load() -> StoredPreferences? { value }
     func save(_ value: StoredPreferences) { self.value = value; saves += 1 }
@@ -52,15 +57,18 @@ nonisolated final class TestClock: ReminderClock {
     let login = TestLogin()
     let activity = TestActivity()
     let breaks = TestBreakPresenter()
-    func make() -> ReminderController {
-        ReminderController(clock: clock, store: store, scheduler: scheduler, overlay: overlay, login: login, activity: activity, breakPresenter: breaks)
+    func make(soundPlayer: (any ReminderSoundPlaying)? = nil) -> ReminderController {
+        ReminderController(clock: clock, store: store, scheduler: scheduler, overlay: overlay, login: login, activity: activity, breakPresenter: breaks, soundPlayer: soundPlayer)
     }
 }
 @MainActor final class TestBreakPresenter: ScreenBreakPresenting {
     var values: [ScreenBreakPhase] = []
     var hides = 0
     var action: (@MainActor (ReminderEvent) -> Void)?
-    func show(_ phase: ScreenBreakPhase, onAction: @escaping @MainActor (ReminderEvent) -> Void) { values.append(phase); action = onAction }
+    var durations: [TimeInterval] = []
+    func show(_ phase: ScreenBreakPhase, duration: TimeInterval, onAction: @escaping @MainActor (ReminderEvent) -> Void) {
+        values.append(phase); durations.append(duration); action = onAction
+    }
     func hide() { hides += 1; action = nil }
 }
 @MainActor struct ReminderControllerTests {
@@ -114,7 +122,7 @@ nonisolated final class TestClock: ReminderClock {
         f.store.value = StoredPreferences(settings: .defaults, pause: pause)
         let controller = f.make(); controller.start()
         #expect(controller.state.pause == (pause == .manual ? .manual : .active))
-        #expect(f.scheduler.delay == (pause == .manual ? nil : 10))
+        #expect(f.scheduler.delay == (pause == .manual ? nil : 5))
     }
     @Test func previewCompletionCannotHideNewerPreviewAndPausePersists() throws {
         let f = ControllerFixture(); let controller = f.make(); controller.start()

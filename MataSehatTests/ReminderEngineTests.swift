@@ -9,7 +9,9 @@ struct ReminderEngineTests {
         ClockSnapshot(wall: wall.addingTimeInterval(wallOffset ?? mono), monotonic: mono)
     }
     private func initial(pause: PauseState = .active) -> ReminderState {
-        ReminderEngine.initial(settings: .defaults, pause: pause, at: time(0))
+        var settings = ReminderSettings.defaults
+        settings.interval = 10
+        return ReminderEngine.initial(settings: settings, pause: pause, at: time(0))
     }
     @Test func startsAfterFullIntervalAndKeepsCadence() throws {
         var state = initial()
@@ -101,18 +103,18 @@ struct ReminderEngineTests {
     }
     @Test func validationPreservesValidFieldsAndRepairsNonfiniteValues() {
         var settings = ReminderSettings.defaults
-        settings.effect = .centerEye
+        settings.effect = .eye
         settings.interval = .infinity
         settings.effects[.dim] = EffectSettings(opacity: .nan, duration: 0.8)
-        settings.effects[.cornerEye] = EffectSettings(opacity: 5, duration: -.infinity)
+        settings.effects[.eye] = EffectSettings(opacity: 5, duration: -.infinity)
         settings.pauseOption = .minutes(2)
         let value = settings.validated()
-        #expect(value.effect == .centerEye)
-        #expect(value.interval == 10)
-        #expect(value.effects[.dim]?.opacity == 0.06)
+        #expect(value.effect == .eye)
+        #expect(value.interval == 5)
+        #expect(value.effects[.dim]?.opacity == 0.2)
         #expect(value.effects[.dim]?.duration == 0.8)
-        #expect(value.effects[.cornerEye]?.opacity == 0.8)
-        #expect(value.effects[.cornerEye]?.duration == 1)
+        #expect(value.effects[.eye]?.opacity == 1)
+        #expect(value.effects[.eye]?.duration == 1)
         #expect(value.pauseOption == .minutes(15))
     }
 }

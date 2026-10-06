@@ -16,20 +16,20 @@ struct QuickPanelView: View {
                 }
             }
             IntervalPicker(controller: controller).controlSize(.small)
-            PauseControls(controller: controller)
+            VStack(alignment: .leading, spacing: 6) {
+                HelpHeading(topic: .pause)
+                PauseControls(controller: controller)
+            }
             Divider()
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Отдых 20–20–20").font(.headline)
-                    Spacer()
-                    Button("Отдохнуть сейчас", systemImage: "binoculars") {
-                        dismiss()
-                        controller.send(.startBreak)
-                    }
-                    .disabled(controller.state.breakPhase.isResting || controller.state.suspended)
-                    .accessibilityIdentifier("restNow")
-                }
+                HelpHeading(topic: .screenBreak).font(.headline)
                 ScreenBreakSummaryView(state: controller.state)
+                Button("Отдохнуть сейчас", systemImage: "binoculars") {
+                    dismiss()
+                    controller.send(.startBreak)
+                }
+                .disabled(controller.state.breakPhase.isResting || controller.state.suspended)
+                .accessibilityIdentifier("restNow")
             }
             if let error = controller.errorMessage {
                 Text(error).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)

@@ -12,11 +12,11 @@ struct OverlayWindowTests {
         #expect(presenter.panel.styleMask.contains(.nonactivatingPanel))
         #expect(presenter.panel.collectionBehavior.contains(.canJoinAllSpaces))
         let keyWindow = NSApp.keyWindow
-        presenter.show(.invitation) { _ in }
+        presenter.show(.invitation, duration: 20) { _ in }
         #expect(presenter.panel.isVisible)
         #expect(NSApp.keyWindow === keyWindow)
         let panel = presenter.panel
-        presenter.show(.resting(until: ProcessInfo.processInfo.systemUptime + 20)) { _ in }
+        presenter.show(.resting(until: ProcessInfo.processInfo.systemUptime + 20), duration: 20) { _ in }
         #expect(presenter.panel === panel)
         presenter.hide()
         #expect(!presenter.panel.isVisible)

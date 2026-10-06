@@ -30,6 +30,6 @@ nonisolated struct AppConfiguration {
     func stop() {}
 }
 @MainActor final class InactiveScreenBreakPresenter: ScreenBreakPresenting {
-    func show(_ phase: ScreenBreakPhase, onAction: @escaping @MainActor (ReminderEvent) -> Void) {}
+    func show(_ phase: ScreenBreakPhase, duration: TimeInterval, onAction: @escaping @MainActor (ReminderEvent) -> Void) {}
     func hide() {}
 }

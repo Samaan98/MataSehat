@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @MainActor protocol ScreenBreakPresenting {
-    func show(_ phase: ScreenBreakPhase, onAction: @escaping @MainActor (ReminderEvent) -> Void)
+    func show(_ phase: ScreenBreakPhase, duration: TimeInterval, onAction: @escaping @MainActor (ReminderEvent) -> Void)
     func hide()
 }
 @MainActor final class ScreenBreakWindowController: ScreenBreakPresenting {
@@ -22,7 +22,7 @@ import SwiftUI
         storedPanel = panel
         return panel
     }
-    func show(_ phase: ScreenBreakPhase, onAction: @escaping @MainActor (ReminderEvent) -> Void) {
+    func show(_ phase: ScreenBreakPhase, duration: TimeInterval, onAction: @escaping @MainActor (ReminderEvent) -> Void) {
         guard phase != .waiting else { hide(); return }
         guard let screen = NSScreen.screens.first else {
             onError?("Не удалось найти экран для отдыха.")
@@ -34,7 +34,7 @@ import SwiftUI
             let visible = screen.visibleFrame
             panel.setFrameOrigin(NSPoint(x: visible.midX - panel.frame.width / 2, y: visible.midY - panel.frame.height / 2))
         }
-        panel.contentView = NSHostingView(rootView: ScreenBreakView(phase: phase, onAction: onAction))
+        panel.contentView = NSHostingView(rootView: ScreenBreakView(phase: phase, duration: duration, onAction: onAction))
         panel.orderFrontRegardless()
     }
     func hide() {

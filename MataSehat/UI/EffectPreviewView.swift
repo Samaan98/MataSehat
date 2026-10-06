@@ -4,24 +4,33 @@ struct EffectPreviewView: View {
     let effect: ReminderEffect
     let settings: EffectSettings
     let trigger: UInt64
+    var eyePosition: EyePosition = .center
+    var eyeScale = 1.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var openness = 1.0
     var body: some View {
-        ZStack(alignment: effect == .cornerEye ? .topTrailing : .center) {
-            RoundedRectangle(cornerRadius: 8).fill(.quaternary)
-            Image(systemName: "macwindow").font(.largeTitle).foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if effect == .dim { RoundedRectangle(cornerRadius: 8).fill(.black.opacity(settings.opacity)) }
-            else {
-                BlinkEyeMark(openness: openness)
-                    .scaleEffect(effect == .cornerEye ? 0.45 : 0.8)
-                    .opacity(settings.opacity)
-                    .padding(effect == .cornerEye ? 4 : 0)
+        GeometryReader { geometry in
+            ZStack {
+                RoundedRectangle(cornerRadius: 8).fill(.quaternary)
+                Image(systemName: "macwindow").font(.largeTitle).foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if effect == .dim { RoundedRectangle(cornerRadius: 8).fill(.black.opacity(settings.opacity)) }
+                else {
+                    let frame = EyeLayout.frame(in: CGSize(width: geometry.size.width * 4, height: geometry.size.height * 4),
+                                                position: eyePosition, scale: eyeScale)
+                    BlinkEyeMark(openness: openness, width: frame.width / 4)
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.65), radius: 1)
+                        .opacity(settings.opacity)
+                        .position(x: frame.midX / 4, y: frame.midY / 4)
+                }
             }
         }
-        .frame(height: 100)
-        .accessibilityLabel("Миниатюра: " + effect.title)
-        .task(id: "\(effect.rawValue).\(trigger)") {
+        .frame(height: 140)
+        .accessibilityLabel("Миниатюра: " + effect.title + (effect == .eye ? ", " + eyePosition.title : ""))
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: eyePosition)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: eyeScale)
+        .task(id: "\(effect.rawValue).\(trigger).\(eyePosition.rawValue)") {
             openness = 1
             guard !reduceMotion, effect != .dim else { return }
             do {

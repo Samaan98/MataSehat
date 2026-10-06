@@ -14,12 +14,14 @@ import Observation
     @ObservationIgnored private let activity: any ActivityMonitoring
     @ObservationIgnored private let breakPresenter: any ScreenBreakPresenting
     @ObservationIgnored private let automaticReminders: Bool
+    @ObservationIgnored private let soundPlayer: any ReminderSoundPlaying
     @ObservationIgnored private var started = false
-    init(clock: any ReminderClock, store: any PreferencesStoring, scheduler: any ReminderScheduling, overlay: any OverlayPresenting, login: any LoginItemServicing, activity: any ActivityMonitoring, automaticReminders: Bool = true, breakPresenter: (any ScreenBreakPresenting)? = nil) {
+    init(clock: any ReminderClock, store: any PreferencesStoring, scheduler: any ReminderScheduling, overlay: any OverlayPresenting, login: any LoginItemServicing, activity: any ActivityMonitoring, automaticReminders: Bool = true, breakPresenter: (any ScreenBreakPresenting)? = nil, soundPlayer: (any ReminderSoundPlaying)? = nil) {
         self.clock = clock; self.store = store; self.scheduler = scheduler
         self.overlay = overlay; self.login = login; self.activity = activity
         self.automaticReminders = automaticReminders
         self.breakPresenter = breakPresenter ?? InactiveScreenBreakPresenter()
+        self.soundPlayer = soundPlayer ?? InactiveReminderSoundPlayer()
         let saved = store.load()
         isFirstLaunch = saved == nil
         state = ReminderEngine.initial(settings: saved?.settings ?? .defaults, pause: saved?.pause ?? .active, at: clock.now())
@@ -51,7 +53,8 @@ import Observation
         for command in result.commands {
             switch command {
             case .showBreak:
-                breakPresenter.show(state.breakPhase) { [weak self] event in self?.send(event) }
+                breakPresenter.show(state.breakPhase, duration: state.breakDuration) { [weak self] event in self?.send(event) }
+            case .playSound(let sound): soundPlayer.play(sound)
             case .hideBreak: breakPresenter.hide()
             case .hide: overlay.hide()
             case .show(let value):

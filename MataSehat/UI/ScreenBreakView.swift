@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ScreenBreakView: View {
     let phase: ScreenBreakPhase
+    var duration: TimeInterval = 20
     let onAction: @MainActor (ReminderEvent) -> Void
     var body: some View {
         VStack(spacing: 16) {
@@ -11,14 +12,14 @@ struct ScreenBreakView: View {
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
             if case .resting(let deadline) = phase {
                 TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    RestCountdownView(remaining: Int(ceil(min(ScreenBreakTiming.duration,
+                    RestCountdownView(remaining: Int(ceil(min(duration,
                         max(0, deadline - ProcessInfo.processInfo.systemUptime)))))
                 }
                 Button("Завершить раньше") { onAction(.finishBreak) }
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("endBreak")
             } else {
-                Text("20 секунд без экрана").font(.headline)
+                Text("\(duration.formatted(.number.precision(.fractionLength(0)))) с без экрана").font(.headline)
                 HStack(spacing: 12) {
                     Button("Отложить на 5 минут") { onAction(.snoozeBreak) }
                         .keyboardShortcut(.cancelAction)
@@ -63,13 +64,14 @@ struct ScreenBreakSummaryView: View {
     private var title: String {
         switch state.breakPhase {
         case .invitation: return "Пора посмотреть вдаль"
-        case .resting: return "Отдых идёт · 20 секунд"
+        case .resting: return "Отдых идёт · \(Int(state.breakDuration)) с"
         case .waiting:
             guard state.settings.screenBreaksEnabled else { return "Автоматический отдых выключен" }
             guard state.pause == .active, !state.suspended else { return "Отдых на паузе" }
-            guard let deadline = state.nextBreakDue else { return "Отдых каждые 20 минут" }
+            let period = "Отдых каждые \(Int(state.settings.screenBreakInterval / 60)) мин"
+            guard let deadline = state.nextBreakDue else { return period }
             let minutes = ceil(max(0, deadline - ProcessInfo.processInfo.systemUptime) / 60)
-            guard let value = Int(exactly: minutes) else { return "Отдых каждые 20 минут" }
+            guard let value = Int(exactly: minutes) else { return period }
             return "До отдыха · \(value) мин"
         }
     }

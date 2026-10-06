@@ -29,18 +29,19 @@ struct PauseControls: View {
     let controller: ReminderController
     var body: some View {
         HStack {
-            Picker("Пауза", selection: Binding(get: { controller.state.settings.pauseOption }, set: { option in
+            Picker("Длительность паузы", selection: Binding(get: { controller.state.settings.pauseOption }, set: { option in
                 if controller.state.pause == .active { controller.updateSettings { $0.pauseOption = option } }
                 else { controller.send(.pause(option)) }
             })) {
                 ForEach(PauseOption.all, id: \.self) { option in Text(option.title).tag(option) }
             }
+            .labelsHidden()
             .accessibilityIdentifier("pauseOption")
             Button {
                 if controller.state.pause == .active { controller.send(.pause(controller.state.settings.pauseOption)) }
                 else { controller.send(.resume) }
             } label: {
-                Label(controller.state.pause == .active ? "Пауза" : "Продолжить сейчас", systemImage: controller.state.pause == .active ? "pause.fill" : "play.fill")
+                Label(controller.state.pause == .active ? "Приостановить" : "Продолжить сейчас", systemImage: controller.state.pause == .active ? "pause.fill" : "play.fill")
             }
             .buttonStyle(.glassProminent)
             .accessibilityIdentifier("pauseResume")
@@ -50,10 +51,14 @@ struct PauseControls: View {
 struct IntervalPicker: View {
     let controller: ReminderController
     var body: some View {
-        Picker("Интервал", selection: Binding(get: { controller.state.settings.interval }, set: { interval in controller.updateSettings { $0.interval = interval } })) {
-            ForEach(ReminderSettings.intervals, id: \.self) { interval in Text("\(Int(interval)) с").tag(interval) }
+        VStack(alignment: .leading, spacing: 6) {
+            HelpHeading(topic: .interval)
+            Picker("Интервал морганий", selection: Binding(get: { controller.state.settings.interval }, set: { interval in controller.updateSettings { $0.interval = interval } })) {
+                ForEach(ReminderSettings.intervals, id: \.self) { interval in Text("\(Int(interval)) с").tag(interval) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .accessibilityIdentifier("interval")
         }
-        .pickerStyle(.segmented)
-        .accessibilityIdentifier("interval")
     }
 }
