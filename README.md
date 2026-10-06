@@ -8,7 +8,7 @@
 
 *Mata sehat* по-индонезийски — **«здоровые глаза»**.
 
-`macOS 26.5+` · `Строка меню` · `Работает локально`
+`macOS 26.0+` · `Строка меню` · `Работает локально`
 
 </div>
 
@@ -31,7 +31,7 @@
 
 ## Попробовать
 
-Нужна **macOS 26.5 или новее**. Готовая сборка для Apple Silicon и Intel доступна в [Releases](https://github.com/Samaan98/MataSehat/releases/latest).
+Нужна **macOS 26.0 или новее**. Готовая сборка для Apple Silicon и Intel доступна в [Releases](https://github.com/Samaan98/MataSehat/releases/latest).
 
 Скачай ZIP, распакуй его и перенеси **MataSehat.app** в папку **«Программы»**.
 

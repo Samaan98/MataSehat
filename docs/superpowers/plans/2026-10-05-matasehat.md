@@ -1,5 +1,7 @@
 # MataSehat Native macOS Implementation Plan
 
+Актуализация от 6 октября 2026: начиная с релиза 1.0.1 минимальная версия приложения и тестов — macOS 26.0. Ниже сохранён исходный документ с требованиями на момент его подготовки.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans or superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. No delegation until the user selects it.
 
 **Goal:** Создать нативную утилиту macOS с тремя напоминаниями о моргании, выбираемой паузой и минималистичным интерфейсом SwiftUI по рекомендациям Apple, с уместным Liquid Glass и мягкими анимациями.

@@ -1,6 +1,6 @@
 # Working on MataSehat
 
-Native SwiftUI macOS app. Keep the minimum deployment target at macOS 26.5 and use standard Apple controls and system colors.
+Native SwiftUI macOS app. Keep the minimum deployment target at macOS 26.0 and use standard Apple controls and system colors.
 
 ## Verification without interrupting the user
 
