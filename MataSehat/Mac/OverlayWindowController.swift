@@ -27,7 +27,7 @@ import SwiftUI
     func show(_ value: EffectPresentation, reduceMotion: Bool, completion: @escaping @MainActor (UInt64) -> Void) {
         hide()
         guard let screen = NSScreen.screens.first else {
-            onError?("Не удалось найти экран для напоминания.")
+            onError?(String(localized: "Could not find a screen for the blink reminder."))
             completion(value.id)
             return
         }

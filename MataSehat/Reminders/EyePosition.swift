@@ -4,17 +4,17 @@ import CoreGraphics
 nonisolated enum EyePosition: String, CaseIterable, Sendable {
     case topLeading, top, topTrailing, leading, center, trailing, bottomLeading, bottom, bottomTrailing
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
-        case .topLeading: "Сверху слева"
-        case .top: "Сверху"
-        case .topTrailing: "Сверху справа"
-        case .leading: "Слева"
-        case .center: "В центре"
-        case .trailing: "Справа"
-        case .bottomLeading: "Снизу слева"
-        case .bottom: "Снизу"
-        case .bottomTrailing: "Снизу справа"
+        case .topLeading: "Top left"
+        case .top: "Top"
+        case .topTrailing: "Top right"
+        case .leading: "Left"
+        case .center: "Centre"
+        case .trailing: "Right"
+        case .bottomLeading: "Bottom left"
+        case .bottom: "Bottom"
+        case .bottomTrailing: "Bottom right"
         }
     }
     var column: Int {

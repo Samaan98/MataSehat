@@ -7,24 +7,27 @@ struct ScreenBreakView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "binoculars").font(.largeTitle).foregroundStyle(.secondary).accessibilityHidden(true)
-            Text(phase.isResting ? "Посмотри вдаль" : "Пора дать глазам отдых").font(.title2).fontWeight(.semibold)
-            Text("Выбери объект примерно в 6 метрах или дальше.")
+            Group {
+                if phase.isResting { Text("Look into the distance") }
+                else { Text("Time for an eye break") }
+            }.font(.title2).fontWeight(.semibold)
+            Text("Look at something at least 20 feet (about 6 metres) away.")
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
             if case .resting(let deadline) = phase {
                 TimelineView(.periodic(from: .now, by: 1)) { _ in
                     RestCountdownView(remaining: Int(ceil(min(duration,
                         max(0, deadline - ProcessInfo.processInfo.systemUptime)))))
                 }
-                Button("Завершить раньше") { onAction(.finishBreak) }
+                Button("End break early") { onAction(.finishBreak) }
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("endBreak")
             } else {
-                Text("\(duration.formatted(.number.precision(.fractionLength(0)))) с без экрана").font(.headline)
+                Text("\(duration, format: .number.precision(.fractionLength(0))) s away from the screen").font(.headline)
                 HStack(spacing: 12) {
-                    Button("Отложить на 5 минут") { onAction(.snoozeBreak) }
+                    Button("Snooze for 5 minutes") { onAction(.snoozeBreak) }
                         .keyboardShortcut(.cancelAction)
                         .accessibilityIdentifier("snoozeBreak")
-                    Button("Начать отдых") { onAction(.startBreak) }
+                    Button("Start break") { onAction(.startBreak) }
                         .buttonStyle(.automatic)
                         .fontWeight(.semibold)
                         .accessibilityIdentifier("startBreak")
@@ -36,15 +39,18 @@ struct ScreenBreakView: View {
     }
 }
 
-private struct RestCountdownView: View {
+struct RestCountdownView: View {
     let remaining: Int
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        Text("\(remaining) с").font(.largeTitle).monospacedDigit()
+        Text("\(remaining) s").font(.largeTitle).monospacedDigit()
             .contentTransition(.numericText(countsDown: true))
             .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: remaining)
-            .accessibilityLabel("Осталось \(remaining) секунд")
+            .accessibilityLabel(Text(Self.accessibilityTitle(remaining: remaining)))
             .accessibilityIdentifier("restCountdown")
+    }
+    static func accessibilityTitle(remaining: Int) -> LocalizedStringResource {
+        "\(remaining) seconds remaining"
     }
 }
 
@@ -54,30 +60,30 @@ struct ScreenBreakSummaryView: View {
     var body: some View {
         Group {
             if visible, state.pause == .active, state.breakPhase == .waiting, state.nextBreakDue != nil {
-                TimelineView(.periodic(from: .now, by: 1)) { _ in Text(title) }
-            } else { Text(title) }
+                TimelineView(.periodic(from: .now, by: 1)) { _ in Text(Self.title(for: state, now: ProcessInfo.processInfo.systemUptime)) }
+            } else { Text(Self.title(for: state, now: ProcessInfo.processInfo.systemUptime)) }
         }
         .font(.caption).foregroundStyle(.secondary)
         .onAppear { visible = true }.onDisappear { visible = false }
         .accessibilityIdentifier("breakStatus")
     }
-    private var title: String {
+    static func title(for state: ReminderState, now: TimeInterval) -> LocalizedStringResource {
         switch state.breakPhase {
-        case .invitation: return "Пора посмотреть вдаль"
-        case .resting: return "Отдых идёт · \(Int(state.breakDuration)) с"
+        case .invitation: return "Time to look into the distance"
+        case .resting: return "Break in progress · \(Int(state.breakDuration)) s"
         case .waiting:
-            guard state.settings.screenBreaksEnabled else { return "Автоматический отдых выключен" }
-            guard state.pause == .active, !state.suspended else { return "Отдых на паузе" }
-            let period = "Отдых каждые \(Int(state.settings.screenBreakInterval / 60)) мин"
+            guard state.settings.screenBreaksEnabled else { return "Automatic breaks are off" }
+            guard state.pause == .active, !state.suspended else { return "Break reminders are paused" }
+            let period: LocalizedStringResource = "Break every \(Int(state.settings.screenBreakInterval / 60)) min"
             guard let deadline = state.nextBreakDue else { return period }
-            let minutes = ceil(max(0, deadline - ProcessInfo.processInfo.systemUptime) / 60)
+            let minutes = ceil(max(0, deadline - now) / 60)
             guard let value = Int(exactly: minutes) else { return period }
-            return "До отдыха · \(value) мин"
+            return "Next break · \(value) min"
         }
     }
 }
 
 #if DEBUG
-#Preview("Напоминание об отдыхе") { ScreenBreakView(phase: .invitation, onAction: { _ in }) }
-#Preview("Двадцать секунд") { ScreenBreakView(phase: .resting(until: ProcessInfo.processInfo.systemUptime + 20), onAction: { _ in }) }
+#Preview("Break invitation") { ScreenBreakView(phase: .invitation, onAction: { _ in }) }
+#Preview("Twenty seconds") { ScreenBreakView(phase: .resting(until: ProcessInfo.processInfo.systemUptime + 20), onAction: { _ in }) }
 #endif

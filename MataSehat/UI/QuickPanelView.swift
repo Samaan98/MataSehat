@@ -24,7 +24,7 @@ struct QuickPanelView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HelpHeading(topic: .screenBreak).font(.headline)
                 ScreenBreakSummaryView(state: controller.state)
-                Button("Отдохнуть сейчас", systemImage: "binoculars") {
+                Button("Take a break now", systemImage: "binoculars") {
                     dismiss()
                     controller.send(.startBreak)
                 }
@@ -36,10 +36,10 @@ struct QuickPanelView: View {
             }
             Divider()
             HStack {
-                Button("Настройки…", systemImage: "gearshape") { dismiss(); showSettings() }
+                Button("Settings…", systemImage: "gearshape") { dismiss(); showSettings() }
                     .keyboardShortcut(",")
                 Spacer()
-                Button("Выход") { controller.stop(); NSApp.terminate(nil) }
+                Button("Quit") { controller.stop(); NSApp.terminate(nil) }
                     .keyboardShortcut("q")
             }
             .buttonStyle(.borderless)

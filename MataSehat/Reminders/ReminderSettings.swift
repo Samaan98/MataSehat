@@ -2,8 +2,8 @@ import Foundation
 
 nonisolated enum ReminderEffect: String, CaseIterable, Sendable {
     case eye, dim
-    var title: String {
-        switch self { case .eye: "Глаз"; case .dim: "Затемнение" }
+    var title: LocalizedStringResource {
+        switch self { case .eye: "Eye"; case .dim: "Dim" }
     }
     var opacityRange: ClosedRange<Double> { self == .dim ? 0.02...0.5 : 0.4...1 }
     var durationRange: ClosedRange<Double> { self == .dim ? 0.1...2 : 0.5...2 }
@@ -16,7 +16,7 @@ nonisolated struct EffectSettings: Equatable, Sendable {
 nonisolated enum PauseOption: Equatable, Hashable, Sendable {
     case minutes(Int), manual
     static let all: [Self] = [.minutes(5), .minutes(15), .minutes(30), .minutes(60), .manual]
-    var title: String { switch self { case .minutes(let value): "\(value) мин"; case .manual: "До включения" } }
+    var title: LocalizedStringResource { switch self { case .minutes(let value): "\(value) min"; case .manual: "Until resumed" } }
 }
 nonisolated struct ReminderSettings: Equatable, Sendable {
     var effect: ReminderEffect

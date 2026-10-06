@@ -10,7 +10,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
-                Picker("Напоминание", selection: Binding(get: { effect }, set: { effect in controller.updateSettings { $0.effect = effect } })) {
+                Picker("Reminder", selection: Binding(get: { effect }, set: { effect in controller.updateSettings { $0.effect = effect } })) {
                     ForEach(ReminderEffect.allCases, id: \.self) { effect in Text(effect.title).tag(effect) }
                 }
                 .pickerStyle(.segmented)
@@ -18,7 +18,7 @@ struct SettingsView: View {
                 .accessibilityIdentifier("effect")
                 IntervalPicker(controller: controller)
                 if effect == .eye {
-                    Picker("Положение", selection: settingsBinding(\.eyePosition)) {
+                    Picker("Position", selection: settingsBinding(\.eyePosition)) {
                         ForEach(EyePosition.allCases, id: \.self) { position in
                             Text(position.title).tag(position)
                         }
@@ -26,13 +26,13 @@ struct SettingsView: View {
                     .accessibilityIdentifier("eyePosition")
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Text("Размер глаза")
+                            Text("Eye size")
                             Spacer()
                             Text(controller.state.settings.eyeScale, format: .percent.precision(.fractionLength(0)))
                                 .foregroundStyle(.secondary).monospacedDigit()
                         }
                         Slider(value: settingsBinding(\.eyeScale), in: ReminderSettings.eyeScaleRange, step: 0.05)
-                            .accessibilityLabel("Размер глаза")
+                            .accessibilityLabel("Eye size")
                             .accessibilityIdentifier("eyeScale")
                     }
                 }
@@ -40,63 +40,63 @@ struct SettingsView: View {
                                   eyePosition: controller.state.settings.eyePosition,
                                   eyeScale: controller.state.settings.eyeScale)
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack { Text("Заметность"); Spacer(); Text(parameters.opacity, format: .percent.precision(.fractionLength(0))).foregroundStyle(.secondary).monospacedDigit() }
+                    HStack { Text("Visibility"); Spacer(); Text(parameters.opacity, format: .percent.precision(.fractionLength(0))).foregroundStyle(.secondary).monospacedDigit() }
                     Slider(value: parameterBinding(\.opacity), in: effect.opacityRange)
-                        .accessibilityLabel("Заметность")
+                        .accessibilityLabel("Visibility")
                         .accessibilityIdentifier("opacity")
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack { Text("Длительность"); Spacer(); Text("\(parameters.duration.formatted(.number.precision(.fractionLength(1)))) с").foregroundStyle(.secondary).monospacedDigit() }
+                    HStack { Text("Duration"); Spacer(); Text("\(parameters.duration, format: .number.precision(.fractionLength(1))) s").foregroundStyle(.secondary).monospacedDigit() }
                     Slider(value: parameterBinding(\.duration), in: effect.durationRange, step: 0.1)
-                        .accessibilityLabel("Длительность")
+                        .accessibilityLabel("Duration")
                         .accessibilityIdentifier("duration")
                 }
                 HStack {
                     Spacer()
-                    Button("Попробовать сейчас", systemImage: "eye") {
+                    Button("Preview now", systemImage: "eye") {
                         previewTrigger &+= 1
                         controller.send(.preview)
                     }
                     .accessibilityIdentifier("preview")
                     .disabled(controller.state.breakPhase.isResting)
                 }
-            } header: { Text("Напоминание") } footer: {
-                Text("Наложение пропускает нажатия и не прерывает работу.")
+            } header: { Text("Reminder") } footer: {
+                Text("The overlay lets clicks through and keeps your work in focus.")
             }
             Section {
-                Toggle("Напоминать об отдыхе", isOn: settingsBinding(\.screenBreaksEnabled))
+                Toggle("Remind me to take breaks", isOn: settingsBinding(\.screenBreaksEnabled))
                     .accessibilityIdentifier("screenBreaksEnabled")
-                TimeSettingRow(title: "Период напоминания", unit: "мин", value: Binding(
+                TimeSettingRow(title: "Reminder interval", unit: "min", value: Binding(
                     get: { controller.state.settings.screenBreakInterval / 60 },
                     set: { value in controller.updateSettings { $0.screenBreakInterval = value * 60 } }),
                     range: 1...120, identifier: "screenBreakInterval")
-                TimeSettingRow(title: "Длительность отдыха", unit: "с", value: settingsBinding(\.screenBreakDuration),
+                TimeSettingRow(title: "Break duration", unit: "s", value: settingsBinding(\.screenBreakDuration),
                                range: ReminderSettings.screenBreakDurationRange, identifier: "screenBreakDuration")
-                Toggle("Звук напоминания и окончания", isOn: settingsBinding(\.screenBreakSoundsEnabled))
+                Toggle("Play sounds when a break is offered and ends", isOn: settingsBinding(\.screenBreakSoundsEnabled))
                     .accessibilityIdentifier("screenBreakSoundsEnabled")
                 HStack {
-                    Text("Взгляд вдаль · примерно 6 метров").foregroundStyle(.secondary)
+                    Text("Look into the distance · about 20 feet (6 m)").foregroundStyle(.secondary)
                     Spacer()
-                    Button("Показать напоминание") { controller.send(.requestBreak) }
+                    Button("Show reminder") { controller.send(.requestBreak) }
                         .disabled(controller.state.breakPhase.isResting)
                         .accessibilityIdentifier("breakPreview")
                 }
             } header: { HelpHeading(topic: .screenBreak) } footer: {
-                Text("Отдых начинается по кнопке в карточке. Можно отложить на 5 минут.")
+                Text("Start the break from the reminder card, or snooze it for 5 minutes.")
             }
             Section {
                 StatusView(pause: controller.state.pause)
                 PauseControls(controller: controller)
             } header: { HelpHeading(topic: .pause) }
-            Section("Система") {
-                Toggle("Запускать при входе", isOn: Binding(get: { controller.loginItemStatus == .enabled || controller.loginItemStatus == .requiresApproval }, set: { controller.setLaunchAtLogin($0) }))
+            Section("System") {
+                Toggle("Launch at login", isOn: Binding(get: { controller.loginItemStatus == .enabled || controller.loginItemStatus == .requiresApproval }, set: { controller.setLaunchAtLogin($0) }))
                     .accessibilityIdentifier("launchAtLogin")
                     .disabled(controller.loginItemStatus == .unavailable)
                 if controller.loginItemStatus == .requiresApproval {
-                    Text("Разрешите запуск в настройках macOS.").foregroundStyle(.secondary)
-                    Button("Открыть настройки входа") { SMAppService.openSystemSettingsLoginItems() }
+                    Text("Allow launch at login in macOS settings.").foregroundStyle(.secondary)
+                    Button("Open Login Items settings") { SMAppService.openSystemSettingsLoginItems() }
                 } else if controller.loginItemStatus == .unavailable {
-                    Text("Запуск при входе недоступен для этой копии приложения.").foregroundStyle(.secondary)
+                    Text("Launch at login is unavailable for this copy of the app.").foregroundStyle(.secondary)
                 }
                 if let error = controller.errorMessage {
                     Text(error).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
@@ -125,8 +125,8 @@ struct SettingsView: View {
 }
 
 private struct TimeSettingRow: View {
-    let title: String
-    let unit: String
+    let title: LocalizedStringKey
+    let unit: LocalizedStringKey
     @Binding var value: Double
     let range: ClosedRange<Double>
     let identifier: String
@@ -139,7 +139,7 @@ private struct TimeSettingRow: View {
                 .labelsHidden()
                 .multilineTextAlignment(.trailing)
                 .frame(width: 54)
-                .help("От \(range.lowerBound.formatted(.number.precision(.fractionLength(0)))) до \(range.upperBound.formatted(.number.precision(.fractionLength(0)))) \(unit)")
+                .help(Text("Allowed range: \(Int(range.lowerBound))–\(Int(range.upperBound)) \(Text(unit))"))
                 .accessibilityIdentifier(identifier)
             Text(unit).foregroundStyle(.secondary)
             Stepper(title, value: $value, in: range, step: 1)

@@ -12,7 +12,7 @@ import SwiftUI
         if let storedPanel { return storedPanel }
         let panel = ScreenBreakPanel(contentRect: NSRect(x: 0, y: 0, width: 420, height: 260),
             styleMask: [.titled, .nonactivatingPanel], backing: .buffered, defer: false)
-        panel.title = "Отдых 20–20–20"
+        panel.title = String(localized: "20–20–20 breaks")
         panel.identifier = NSUserInterfaceItemIdentifier("screenBreak")
         panel.level = .statusBar
         panel.isFloatingPanel = true
@@ -25,7 +25,7 @@ import SwiftUI
     func show(_ phase: ScreenBreakPhase, duration: TimeInterval, onAction: @escaping @MainActor (ReminderEvent) -> Void) {
         guard phase != .waiting else { hide(); return }
         guard let screen = NSScreen.screens.first else {
-            onError?("Не удалось найти экран для отдыха.")
+            onError?(String(localized: "Could not find a screen for the break reminder."))
             onAction(phase.isResting ? .finishBreak : .snoozeBreak)
             return
         }

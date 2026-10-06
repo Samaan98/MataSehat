@@ -35,11 +35,11 @@ import SwiftUI
     func setEnabled(_ enabled: Bool) throws { current = enabled ? .enabled : .disabled }
 }
 
-#Preview("Настройки") {
+#Preview("Settings") {
     SettingsView(controller: PreviewDependencies.make())
 }
 
-#Preview("Панель на паузе") {
+#Preview("Paused panel") {
     QuickPanelView(controller: PreviewDependencies.make(pause: .manual), showSettings: {})
 }
 #endif

@@ -93,7 +93,7 @@ import Observation
     }
     func setLaunchAtLogin(_ enabled: Bool) {
         do { try login.setEnabled(enabled); errorMessage = nil }
-        catch { errorMessage = "Не удалось изменить запуск при входе: \(error.localizedDescription)" }
+        catch { errorMessage = String(localized: "Could not change launch at login: \(error.localizedDescription)") }
         refreshLoginItemStatus()
     }
     func refreshLoginItemStatus() { loginItemStatus = login.status() }

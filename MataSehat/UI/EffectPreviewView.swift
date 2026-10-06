@@ -27,7 +27,7 @@ struct EffectPreviewView: View {
             }
         }
         .frame(height: 140)
-        .accessibilityLabel("Миниатюра: " + effect.title + (effect == .eye ? ", " + eyePosition.title : ""))
+        .accessibilityLabel(previewLabel)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: eyePosition)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: eyeScale)
         .task(id: "\(effect.rawValue).\(trigger).\(eyePosition.rawValue)") {
@@ -40,5 +40,9 @@ struct EffectPreviewView: View {
                 withAnimation(.easeInOut(duration: 0.15)) { openness = 1 }
             } catch { return }
         }
+    }
+    private var previewLabel: Text {
+        if effect == .eye { Text("Preview: \(Text(effect.title)), \(Text(eyePosition.title))") }
+        else { Text("Preview: \(Text(effect.title))") }
     }
 }

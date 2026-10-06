@@ -38,7 +38,7 @@ final class MataSehatUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
     @MainActor private func launch(suite: String, reset: Bool = true, showSettings: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--defaults-suite", suite]
+        app.launchArguments = ["-AppleLanguages", "(ru)", "-AppleLocale", "ru_RU", "--ui-testing", "--defaults-suite", suite]
         if showSettings { app.launchArguments.append("--show-settings") }
         if reset { app.launchArguments.append("--reset-defaults") }
         app.launch()
@@ -88,7 +88,7 @@ final class MataSehatUITests: XCTestCase {
     @MainActor func testAppearanceSnapshots() {
         for appearance in ["light", "dark"] {
             let app = XCUIApplication()
-            app.launchArguments = ["--ui-testing", "--show-settings", "--defaults-suite", "MataSehat.ui.snapshots.\(appearance)", "--reset-defaults", "--appearance", appearance]
+            app.launchArguments = ["-AppleLanguages", "(ru)", "-AppleLocale", "ru_RU", "--ui-testing", "--show-settings", "--defaults-suite", "MataSehat.ui.snapshots.\(appearance)", "--reset-defaults", "--appearance", appearance]
             app.launch()
             app.activate()
             XCTAssertTrue(app.buttons["preview"].waitForExistence(timeout: 6))

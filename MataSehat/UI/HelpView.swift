@@ -3,41 +3,41 @@ import SwiftUI
 nonisolated enum HelpTopic: String, CaseIterable, Sendable {
     case interval, screenBreak, pause
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
-        case .interval: "Интервал морганий"
-        case .screenBreak: "Отдых 20–20–20"
-        case .pause: "Пауза"
+        case .interval: "Blink interval"
+        case .screenBreak: "20–20–20 breaks"
+        case .pause: "Pause"
         }
     }
 
-    var summary: String {
+    var tooltip: LocalizedStringResource {
         switch self {
-        case .interval: "Как выбрать интервал и не забывать моргать между сигналами."
-        case .screenBreak: "Каждые 20 минут смотрите вдаль не менее 20 секунд."
-        case .pause: "Поставьте напоминания временно на паузу, если не хотите отвлекаться."
+        case .interval: "How to choose an interval and remember to blink between reminders. Click to learn more."
+        case .screenBreak: "Every 20 minutes, look into the distance for at least 20 seconds. Click to learn more."
+        case .pause: "Temporarily pause reminders when you need uninterrupted time. Click to learn more."
         }
     }
 
-    var explanation: String {
+    var explanation: LocalizedStringResource {
         switch self {
         case .interval:
             """
-            Обычно человек моргает около 15–20 раз в минуту — примерно раз в 3–4 секунды. При работе за экраном мы часто моргаем реже; частота зависит от человека и занятия.
+            People usually blink about 15–20 times a minute — roughly every 3–4 seconds. We often blink less while using a screen; the rate varies by person and activity.
 
-            Если удобно моргать с каждым сигналом, попробуйте интервал 3–4 секунды. При более редких напоминаниях старайтесь моргать и между сигналами.
+            If you find it comfortable to blink with every reminder, try an interval of 3–4 seconds. With less frequent reminders, remember to blink between them too.
             """
         case .screenBreak:
             """
-            Раз в 20 минут отводите взгляд от экрана минимум на 20 секунд и смотрите на объект не ближе 20 футов — примерно 6 метров.
+            Every 20 minutes, look away from the screen for at least 20 seconds. Focus on an object at least 20 feet — about 6 metres — away.
 
-            Период напоминания и длительность отдыха можно изменить в настройках. Отсчёт начинается после нажатия «Начать отдых».
+            You can change the reminder interval and break duration in settings. The countdown begins when you select “Start break”.
             """
         case .pause:
             """
-            Поставьте напоминания временно на паузу, если не хотите отвлекаться. Она приостанавливает сигналы моргания и автоматические предложения отдыха.
+            Temporarily pause reminders when you do not want distractions. This pauses blink reminders and automatic break invitations.
 
-            Выберите длительность и нажмите «Приостановить». Напоминания возобновятся автоматически, а вариант «До включения» действует до ручного продолжения.
+            Choose a duration and select “Pause reminders”. Reminders resume automatically; “Until resumed” keeps them paused until you resume them yourself.
             """
         }
     }
@@ -66,8 +66,8 @@ struct HelpButton: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.borderless)
-        .help(topic.summary + " Нажмите, чтобы узнать больше.")
-        .accessibilityLabel("Подробнее: " + topic.title)
+        .help(Text(topic.tooltip))
+        .accessibilityLabel(Text("About \(Text(topic.title))"))
         .accessibilityIdentifier("help-" + topic.rawValue)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
             HelpContentView(topic: topic)
