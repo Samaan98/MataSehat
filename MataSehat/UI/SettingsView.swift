@@ -5,6 +5,7 @@ struct SettingsView: View {
     let controller: ReminderController
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var previewTrigger: UInt64 = 0
+    @State private var previewVariant: EyeVariant = .sauron
     private var effect: ReminderEffect { controller.state.settings.effect }
     private var parameters: EffectSettings { controller.state.settings.effects[effect] ?? effect.defaults }
     var body: some View {
@@ -24,6 +25,13 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityIdentifier("eyePosition")
+                    Picker("Стиль глаза", selection: settingsBinding(\.eyeStyle)) {
+                        ForEach(EyeStyle.allCases, id: \.self) { style in
+                            Text(style.title).tag(style)
+                        }
+                    }
+                    .accessibilityIdentifier("eyeStyle")
+                    .help("Системный стиль выбирает тёмный глаз для светлой темы macOS и светлый для тёмной.")
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text("Размер глаза")
@@ -35,9 +43,28 @@ struct SettingsView: View {
                             .accessibilityLabel("Размер глаза")
                             .accessibilityIdentifier("eyeScale")
                     }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Мультивселенная", isOn: settingsBinding(\.easterEggsEnabled))
+                            .accessibilityIdentifier("easterEggsEnabled")
+                        Text("Каждое десятое напоминание — необычный глаз. Варианты чередуются по кругу, каждый в собственных цветах.")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if controller.state.settings.easterEggsEnabled {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Toggle("Показывать каждый раз", isOn: settingsBinding(\.easterEggTestMode))
+                                .accessibilityIdentifier("easterEggTestMode")
+                            Text("Необычный глаз при каждом напоминании и предпросмотре. Можно быстро посмотреть всю коллекцию. Выключите, чтобы вернуться к каждому десятому показу.")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
                 EffectPreviewView(effect: effect, settings: parameters, trigger: previewTrigger,
                                   eyePosition: controller.state.settings.eyePosition,
+                                  eyeStyle: controller.state.settings.eyeStyle,
+                                  eyeVariant: controller.state.settings.easterEggsEnabled && controller.state.settings.easterEggTestMode
+                                    ? previewVariant : .standard,
                                   eyeScale: controller.state.settings.eyeScale)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack { Text("Заметность"); Spacer(); Text(parameters.opacity, format: .percent.precision(.fractionLength(0))).foregroundStyle(.secondary).monospacedDigit() }
@@ -54,8 +81,9 @@ struct SettingsView: View {
                 HStack {
                     Spacer()
                     Button("Попробовать сейчас", systemImage: "eye") {
-                        previewTrigger &+= 1
                         controller.send(.preview)
+                        previewVariant = controller.state.presentation?.eyeVariant ?? .standard
+                        previewTrigger &+= 1
                     }
                     .accessibilityIdentifier("preview")
                     .disabled(controller.state.breakPhase.isResting)

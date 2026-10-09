@@ -11,6 +11,9 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
         var settings = ReminderSettings.defaults
         if let raw = string("effect"), let effect = ReminderEffect(rawValue: raw) { settings.effect = effect }
         if let raw = string("eyePosition"), let position = EyePosition(rawValue: raw) { settings.eyePosition = position }
+        if let raw = string("eyeStyle"), let style = EyeStyle(rawValue: raw) { settings.eyeStyle = style }
+        settings.easterEggsEnabled = boolean("easterEggsEnabled") ?? true
+        settings.easterEggTestMode = boolean("easterEggTestMode") ?? false
         if let value = number("eyeScale") { settings.eyeScale = value }
         if let interval = number("interval") { settings.interval = interval }
         settings.screenBreaksEnabled = boolean("screenBreaksEnabled") ?? true
@@ -44,6 +47,9 @@ nonisolated struct StoredPreferences: Equatable { var settings: ReminderSettings
         set(settings.interval, "interval")
         set(settings.screenBreaksEnabled, "screenBreaksEnabled")
         set(settings.eyePosition.rawValue, "eyePosition")
+        set(settings.eyeStyle.rawValue, "eyeStyle")
+        set(settings.easterEggsEnabled, "easterEggsEnabled")
+        set(settings.easterEggTestMode, "easterEggTestMode")
         set(settings.eyeScale, "eyeScale")
         set(settings.screenBreakInterval, "screenBreakInterval")
         set(settings.screenBreakDuration, "screenBreakDuration")

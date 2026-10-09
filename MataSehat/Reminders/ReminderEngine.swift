@@ -15,6 +15,8 @@ nonisolated struct EffectPresentation: Equatable, Sendable {
     let settings: EffectSettings
     let origin: PresentationOrigin
     var eyePosition: EyePosition = .center
+    var eyeStyle: EyeStyle = .light
+    var eyeVariant: EyeVariant = .standard
     var eyeScale = 1.0
 }
 nonisolated struct ReminderState: Equatable, Sendable {
@@ -24,6 +26,8 @@ nonisolated struct ReminderState: Equatable, Sendable {
     var nextDue: TimeInterval?
     var generation: UInt64 = 0
     var presentation: EffectPresentation?
+    var easterEggProgress = 0
+    var nextEasterEggIndex = 0
     var breakPhase: ScreenBreakPhase = .waiting
     var nextBreakDue: TimeInterval?
     var breakDuration: TimeInterval = 20
@@ -46,18 +50,38 @@ nonisolated enum ReminderEngine {
         resetBreakCycle(&state, at: time)
         return state
     }
-    static func reduce(_ original: ReminderState, event: ReminderEvent, at time: ClockSnapshot) -> EngineResult {
+    static func reduce(_ original: ReminderState, event: ReminderEvent, at time: ClockSnapshot,
+                       chooseEyePosition: () -> EyePosition = { EyePosition.random.resolved() }) -> EngineResult {
         var state = original
         var commands: [EffectCommand] = []
+        func nextEasterEgg() -> EyeVariant {
+            let variant = EyeVariant.easterEggs[state.nextEasterEggIndex]
+            state.nextEasterEggIndex = (state.nextEasterEggIndex + 1) % EyeVariant.easterEggs.count
+            return variant
+        }
         func hide() {
             state.presentation = nil
             commands.append(.hide)
         }
         func show(_ origin: PresentationOrigin) {
             state.generation &+= 1
+            var variant = EyeVariant.standard
+            if state.settings.effect == .eye, state.settings.easterEggsEnabled {
+                if state.settings.easterEggTestMode {
+                    variant = nextEasterEgg()
+                } else if origin == .scheduled {
+                    state.easterEggProgress += 1
+                    if state.easterEggProgress == EyeVariant.cadence {
+                        state.easterEggProgress = 0
+                        variant = nextEasterEgg()
+                    }
+                }
+            }
             let value = EffectPresentation(id: state.generation, effect: state.settings.effect,
                 settings: state.settings.effects[state.settings.effect] ?? state.settings.effect.defaults, origin: origin,
-                eyePosition: state.settings.eyePosition, eyeScale: state.settings.eyeScale)
+                eyePosition: state.settings.effect == .eye ? state.settings.eyePosition.resolved(choosing: chooseEyePosition)
+                    : state.settings.eyePosition, eyeStyle: state.settings.eyeStyle,
+                eyeVariant: variant, eyeScale: state.settings.eyeScale)
             state.presentation = value
             commands.append(.show(value))
         }
@@ -143,6 +167,10 @@ nonisolated enum ReminderEngine {
             let breakEnabledChanged = state.settings.screenBreaksEnabled != settings.screenBreaksEnabled
             let breakPeriodChanged = state.settings.screenBreakInterval != settings.screenBreakInterval
             let breakDurationChanged = state.settings.screenBreakDuration != settings.screenBreakDuration
+            if state.settings.easterEggsEnabled != settings.easterEggsEnabled ||
+                state.settings.easterEggTestMode != settings.easterEggTestMode {
+                state.easterEggProgress = 0
+            }
             state.settings = settings
             let pauseExpired = expirePause(&state, at: time)
             if (breakEnabledChanged || (breakPeriodChanged && state.breakPhase == .waiting)), !state.breakPhase.isResting {

@@ -5,9 +5,13 @@ struct EffectPreviewView: View {
     let settings: EffectSettings
     let trigger: UInt64
     var eyePosition: EyePosition = .center
+    var eyeStyle: EyeStyle = .light
+    var eyeVariant: EyeVariant = .standard
     var eyeScale = 1.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var openness = 1.0
+    @State private var randomPosition: EyePosition = .center
+    private var displayedPosition: EyePosition { eyePosition == .random ? randomPosition : eyePosition }
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -17,20 +21,21 @@ struct EffectPreviewView: View {
                 if effect == .dim { RoundedRectangle(cornerRadius: 8).fill(.black.opacity(settings.opacity)) }
                 else {
                     let frame = EyeLayout.frame(in: CGSize(width: geometry.size.width * 4, height: geometry.size.height * 4),
-                                                position: eyePosition, scale: eyeScale)
-                    BlinkEyeMark(openness: openness, width: frame.width / 4)
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.65), radius: 1)
+                                                position: displayedPosition, scale: eyeScale,
+                                                maximumFraction: 0.5)
+                    BlinkEyeMark(openness: openness, width: frame.width / 4, style: eyeStyle,
+                                 variant: eyeVariant, shadowRadius: 1)
                         .opacity(settings.opacity)
                         .position(x: frame.midX / 4, y: frame.midY / 4)
                 }
             }
         }
         .frame(height: 140)
-        .accessibilityLabel("Миниатюра: " + effect.title + (effect == .eye ? ", " + eyePosition.title : ""))
+        .accessibilityLabel("Миниатюра: " + (effect == .eye ? eyeVariant.title + ", " + eyePosition.title : effect.title))
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: eyePosition)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: eyeScale)
-        .task(id: "\(effect.rawValue).\(trigger).\(eyePosition.rawValue)") {
+        .task(id: "\(effect.rawValue).\(trigger).\(eyePosition.rawValue).\(eyeVariant.rawValue)") {
+            randomPosition = eyePosition.resolved()
             openness = 1
             guard !reduceMotion, effect != .dim else { return }
             do {

@@ -25,6 +25,9 @@ nonisolated struct ReminderSettings: Equatable, Sendable {
     var pauseOption: PauseOption
     var screenBreaksEnabled = true
     var eyePosition: EyePosition = .center
+    var eyeStyle: EyeStyle = .light
+    var easterEggsEnabled = true
+    var easterEggTestMode = false
     var eyeScale = 1.0
     var screenBreakInterval: TimeInterval = 1_200
     var screenBreakDuration: TimeInterval = 20

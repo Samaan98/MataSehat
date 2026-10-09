@@ -15,9 +15,8 @@ struct ReminderOverlayView: View {
                 } else {
                     let frame = EyeLayout.frame(in: geometry.size, position: presentation.eyePosition,
                                                 scale: presentation.eyeScale, topInset: topInset)
-                    BlinkEyeMark(openness: openness, width: frame.width)
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.65), radius: 3)
+                    BlinkEyeMark(openness: openness, width: frame.width, style: presentation.eyeStyle,
+                                 variant: presentation.eyeVariant)
                         .opacity(presentation.settings.opacity * opacity)
                         .position(x: frame.midX, y: frame.midY)
                 }
